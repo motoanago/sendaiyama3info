@@ -1,103 +1,84 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>明細編集フォーム</title>
+  <title>スプレッドシート編集</title>
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 10px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 5px;
-      text-align: center;
-    }
-    input {
-      width: 100%;
-      box-sizing: border-box;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-    }
+    table, th, td { border: 1px solid #aaa; border-collapse: collapse; }
+    th, td { padding: 8px; }
+    input { width: 100%; }
   </style>
 </head>
 <body>
-  <h2>明細編集フォーム（最大20行）</h2>
-  <table id="data-table">
-    <thead>
-      <tr>
-        <th>日付（yyyy/mm/dd）</th>
-        <th>時間（hh:mm）</th>
-        <th>内容</th>
-        <th>担当</th>
-        <th>フロア</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-  <button onclick="updateData()">更新</button>
+  <h1>Googleスプレッドシートの編集</h1>
+  <table id="sheetTable"></table>
+  <button onclick="updateSheet()">更新</button>
 
   <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbymcAHzl4974yzBzrtICE5QwbAtjYzSGCQzgnGVvSFXXxtgcj6EKYeH71X0xylegbe9dQ/exec';
+    const scriptURL = "https://script.google.com/macros/s/AKfycbwZiblVb02SRxgFRdOsFvBaDITHYvYJDTuKDR66aV-MflzXc1OWd_En3f1zaFfq77s2/exec";
 
-    async function fetchData() {
-      try {
-        const res = await fetch(scriptURL);
-        const data = await res.json();
-        const tbody = document.querySelector("#data-table tbody");
-        tbody.innerHTML = '';
+    async function loadSheet() {
+      const res = await fetch(scriptURL);
+      const data = await res.json();
+      const table = document.getElementById('sheetTable');
+      table.innerHTML = '';
 
-        for (let i = 1; i <= 20; i++) {
-          const row = document.createElement('tr');
-          for (let j = 0; j < 5; j++) {
-            const cell = document.createElement('td');
+      data.forEach((row, rowIndex) => {
+        const tr = document.createElement('tr');
+        row.forEach((cell, colIndex) => {
+          const td = document.createElement(rowIndex === 0 ? 'th' : 'td');
+          if (rowIndex === 0) {
+            td.textContent = cell;
+          } else {
             const input = document.createElement('input');
-            input.type = 'text';
-            input.value = data[i]?.[j] || '';
-            cell.appendChild(input);
-            row.appendChild(cell);
+            input.value = cell;
+            td.appendChild(input);
           }
-          tbody.appendChild(row);
-        }
-      } catch (error) {
-        alert('データ取得に失敗しました。');
-        console.error(error);
-      }
-    }
-
-    async function updateData() {
-      const rows = Array.from(document.querySelectorAll("#data-table tbody tr"));
-      const values = rows.map(row =>
-        Array.from(row.querySelectorAll("input")).map(input => input.value.trim())
-      ).filter(row => row.some(cell => cell !== ''));
-
-      try {
-        const res = await fetch(scriptURL, {
-          method: 'POST',
-          body: JSON.stringify(values),
-          headers: { 'Content-Type': 'application/json' }
+          tr.appendChild(td);
         });
-
-        if (res.ok) {
-          alert('更新が完了しました。');
-          fetchData();
-        } else {
-          alert('更新に失敗しました。');
-        }
-      } catch (error) {
-        alert('更新処理でエラーが発生しました。');
-        console.error(error);
-      }
+        table.appendChild(tr);
+      });
     }
 
-    fetchData();
+    async function updateSheet() {
+      const table = document.getElementById('sheetTable');
+      const data = Array.from(table.rows).map(row =>
+        Array.from(row.cells).map(cell =>
+          cell.querySelector('input') ? cell.querySelector('input').value : cell.textContent
+        )
+      );
+
+      const res = await fetch(scriptURL, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      alert(await res.text());
+    }
+
+    loadSheet();
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
